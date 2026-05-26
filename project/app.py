@@ -7,11 +7,15 @@ from psycopg2.extras import RealDictCursor
 from flask import Flask, render_template, request, redirect, url_for, session, flash, abort, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
+from supabase import create_client, Client
 
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'default-secret-key-for-dev')
+supabase_url = os.getenv('SUPABASE_URL')
+supabase_key = os.getenv('SUPABASE_KEY') 
+supabase: Client = create_client(supabase_url, supabase_key)
 
 # 데이터베이스 커넥션 풀 초기화
 try:
@@ -187,9 +191,32 @@ def post_create():
         content = request.form.get('content')
         tab_id = request.form.get('tab_id', type=int)
         
+        file = request.files.get('file') # HTML의 name="file"과 일치해야 함
+        image_url = None
+        
+        if file and file.filename != '':
+            # uuid, secure_filename 임포트 필요!
+            import uuid
+            from werkzeug.utils import secure_filename
+            
+            original_filename = secure_filename(file.filename)
+            unique_filename = f"{uuid.uuid4()}_{original_filename}"
+            
+            try:
+                # Supabase Storage에 업로드
+                supabase.storage.from_('posts').upload(
+                    file=file.read(),
+                    path=unique_filename,
+                    file_options={"content-type": file.content_type}
+                )
+                image_url = supabase.storage.from_('posts').get_public_url(unique_filename)
+                print(f"업로드 성공! 주소: {image_url}") # 디버깅용 출력
+            except Exception as e:
+                print(f"업로드 에러: {e}") # 에러가 나면 터미널에 출력됨
+        
         execute_query(
-            "INSERT INTO posts (user_id, tab_id, title, content) VALUES (%s, %s, %s, %s)",
-            (session['db_id'], tab_id, title, content), commit=True
+            "INSERT INTO posts (user_id, tab_id, title, content, image_url) VALUES (%s, %s, %s, %s, %s)",
+            (session['db_id'], tab_id, title, content, image_url), commit=True
         )
         flash('게시글이 작성되었습니다.', 'success')
         return redirect(url_for('post_list'))
