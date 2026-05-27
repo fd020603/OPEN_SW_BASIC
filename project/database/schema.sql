@@ -29,6 +29,8 @@ CREATE TABLE posts (
     tab_id INTEGER REFERENCES board_tabs(id) ON DELETE SET NULL,
     title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL,
+    image_url TEXT,
+    video_url TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -2,10 +2,14 @@ import os
 import psycopg2
 from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash
+from supabase import create_client, Client
 
 def setup_database():
     load_dotenv()
     db_url = os.getenv('DATABASE_URL')
+    
+    supabase_url = os.getenv('SUPABASE_URL')
+    supabase_key = os.getenv('SUPABASE_KEY')
     
     if not db_url:
         print("Error: DATABASE_URL 환경 변수가 설정되지 않았습니다. .env 파일을 확인하세요.")
@@ -55,6 +59,21 @@ def setup_database():
         cur.close()
         conn.close()
         print("데이터베이스 초기화 성공!")
+        
+        if supabase_url and supabase_key:
+            print("Supabase 스토리지 버킷 세팅을 시작합니다...")
+            supabase: Client = create_client(supabase_url, supabase_key)
+            
+            buckets = supabase.storage.list_buckets()
+            bucket_names = [b.name for b in buckets]
+            
+            if 'posts' not in bucket_names:
+                supabase.storage.create_bucket('posts', options={"public": True})
+                print("스토리지 버킷('posts') 자동 생성 완료!")
+            else:
+                print("스토리지 버킷('posts')이 이미 존재합니다.")
+        else:
+            print("경고: SUPABASE_URL 또는 SUPABASE_KEY가 없어 스토리지를 세팅하지 못했습니다.")
         
     except Exception as e:
         print(f"데이터베이스 초기화 중 오류 발생: {e}")
