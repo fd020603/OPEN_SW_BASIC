@@ -7,6 +7,7 @@ from psycopg2.extras import RealDictCursor
 from flask import Flask, render_template, request, redirect, url_for, session, flash, abort, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
+import re
 from supabase import create_client, Client
 
 load_dotenv()
@@ -87,6 +88,15 @@ def register():
         user_id = request.form.get('user_id')
         password = request.form.get('password')
         nickname = request.form.get('nickname')
+        # 서버 측 비밀번호 검증: 최소 길이 8, 특수문자 포함
+        password_errors = []
+        if not password or len(password) < 8:
+            password_errors.append('비밀번호는 최소 8글자 이상이어야 합니다.')
+        if not password or not re.search(r'[^A-Za-z0-9]', password):
+            password_errors.append('비밀번호에 특수문자를 포함해야 합니다.')
+        if password_errors:
+            # 재렌더링 시 입력값 보존
+            return render_template('register.html', password_errors=password_errors, user_id=user_id, nickname=nickname)
         
         user = execute_query("SELECT id FROM users WHERE user_id = %s", (user_id,), fetchone=True)
         if user:

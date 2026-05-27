@@ -330,6 +330,12 @@ main .btn-outline:hover {
     border-radius: 4px;
     box-sizing: border-box;
 }
+
+/* Password help rules shown below password field */
+.password-help { margin-top: 8px; }
+.password-help .rule { font-size: 0.85rem; color: var(--text-muted); margin: 2px 0; }
+.password-help .rule.failed { color: var(--danger-color); font-weight: 600; }
+.password-help .rule.passed { color: #198754; }
 .btn-block {
     display: block;
     width: 100%;
